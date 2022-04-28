@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:grocery_app/screens/welcome_screen.dart';
 import 'package:grocery_app/styles/colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:grocery_app/utils/general_utils.dart';
 
 class SplashScreen extends StatefulWidget {
   static const routeName = '/SplashScreen';
@@ -22,11 +23,9 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void onTimerFinished() {
-    Navigator.of(context).pushReplacement(new MaterialPageRoute(
-      builder: (BuildContext context) {
-        return WelcomeScreen();
-      },
-    ));
+
+    navigateTo(context, WelcomeScreen.routeName,clearAllStack: true);
+
   }
 
   @override

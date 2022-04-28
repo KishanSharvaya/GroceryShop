@@ -7,6 +7,7 @@ class OfflineDbHelper {
   static Database database;
 
   static const TABLE_PRODUCT_CART = "product_cart";
+  static const TABLE_PRODUCT_CART_FAVORITE = "favorite_product_cart";
 
 
 /*  static createInstance() async {
@@ -45,7 +46,13 @@ class OfflineDbHelper {
   final String Nutritions;
   final String imagePath;*/
 
-    db.execute('CREATE TABLE $TABLE_PRODUCT_CART(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,description TEXT, price DOUBLE, Qty INTEGER , Nutritions TEXT, imagePath TEXT)',);
+    //db.execute('CREATE TABLE $TABLE_PRODUCT_CART(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,description TEXT, price DOUBLE, Qty INTEGER , Nutritions TEXT, imagePath TEXT)',);
+
+
+
+    db.execute('CREATE TABLE $TABLE_PRODUCT_CART(id INTEGER PRIMARY KEY AUTOINCREMENT, ProductName TEXT,ProductAlias TEXT, ProductID INTEGER, CustomerID INTEGER , Unit TEXT, UnitPrice DOUBLE, Quantity INTEGER , DiscountPercent DOUBLE , LoginUserID TEXT, CompanyId TEXT, ProductSpecification TEXT, ProductImage TEXT)',);
+    db.execute('CREATE TABLE $TABLE_PRODUCT_CART_FAVORITE(id INTEGER PRIMARY KEY AUTOINCREMENT, ProductName TEXT,ProductAlias TEXT, ProductID INTEGER, CustomerID INTEGER , Unit TEXT, UnitPrice DOUBLE, Quantity INTEGER , DiscountPercent DOUBLE , LoginUserID TEXT, CompanyId TEXT, ProductSpecification TEXT, ProductImage TEXT)',);
+
 
 
   }
@@ -74,14 +81,35 @@ class OfflineDbHelper {
 
     return List.generate(maps.length, (i) {
 
+      /* int id;
+  String ProductName;
+  String ProductAlias;
+  int ProductID;
+  int CustomerID;
+  String Unit;
+  double UnitPrice;
+  double Quantity;
+  double DiscountPer;
+  String LoginUserID;
+  String ComapanyID;
+  String ProductSpecification;
+  String ProductImage;*/
+
 
       return ProductCartModel(
-        maps[i]['name'],
-        maps[i]['description'],
-        maps[i]['price'],
-        maps[i]['Qty'],
-        maps[i]['Nutritions'],
-        maps[i]['imagePath'],
+        maps[i]['ProductName'],
+        maps[i]['ProductAlias'],
+        maps[i]['ProductID'],
+        maps[i]['CustomerID'],
+        maps[i]['Unit'],
+        maps[i]['UnitPrice'],
+        maps[i]['Quantity'],
+        maps[i]['DiscountPercent'],
+        maps[i]['LoginUserID'],
+        maps[i]['CompanyId'],
+        maps[i]['ProductSpecification'],
+        maps[i]['ProductImage'],
+
         id: maps[i]['id'],
       );
     });
@@ -116,7 +144,87 @@ class OfflineDbHelper {
     );
   }
 
+  /// Here Favorits Product Implimentation
 
+  Future<int> insertProductToCartFavorit(ProductCartModel model) async {
+    final db = await database;
+
+    return await db.insert(
+      TABLE_PRODUCT_CART_FAVORITE,
+      model.toJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<ProductCartModel>> getProductCartFavoritList() async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> maps = await db.query(TABLE_PRODUCT_CART_FAVORITE);
+
+    return List.generate(maps.length, (i) {
+
+      /* int id;
+  String ProductName;
+  String ProductAlias;
+  int ProductID;
+  int CustomerID;
+  String Unit;
+  double UnitPrice;
+  double Quantity;
+  double DiscountPer;
+  String LoginUserID;
+  String ComapanyID;
+  String ProductSpecification;
+  String ProductImage;*/
+
+
+      return ProductCartModel(
+        maps[i]['ProductName'],
+        maps[i]['ProductAlias'],
+        maps[i]['ProductID'],
+        maps[i]['CustomerID'],
+        maps[i]['Unit'],
+        maps[i]['UnitPrice'],
+        maps[i]['Quantity'],
+        maps[i]['DiscountPercent'],
+        maps[i]['LoginUserID'],
+        maps[i]['CompanyId'],
+        maps[i]['ProductSpecification'],
+        maps[i]['ProductImage'],
+
+        id: maps[i]['id'],
+      );
+    });
+  }
+
+  Future<void> updateContactFavorit(ProductCartModel model) async {
+    final db = await database;
+
+    await db.update(
+      TABLE_PRODUCT_CART_FAVORITE,
+      model.toJson(),
+      where: 'id = ?',
+      whereArgs: [model.id],
+    );
+  }
+
+  Future<void> deleteContactFavorit(int id) async {
+    final db = await database;
+
+    await db.delete(
+      TABLE_PRODUCT_CART_FAVORITE,
+      where: 'ProductID = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deleteContactTableFavorit() async {
+    final db = await database;
+
+    await db.delete(
+        TABLE_PRODUCT_CART_FAVORITE
+    );
+  }
 
 
 }

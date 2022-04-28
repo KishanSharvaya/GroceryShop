@@ -2,13 +2,21 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:grocery_app/bloc/others/firstscreen/first_screen_bloc.dart';
 import 'package:grocery_app/common_widgets/app_button.dart';
+import 'package:grocery_app/models/api_request/Customer/customer_registration_request.dart';
+import 'package:grocery_app/models/api_response/Customer/customer_login_response.dart';
+import 'package:grocery_app/models/api_response/company_details_response.dart';
 import 'package:grocery_app/models/signup_details.dart';
+import 'package:grocery_app/screens/base/base_screen.dart';
 import 'package:grocery_app/screens/login/login_screen.dart';
 import 'package:grocery_app/ui/color_resource.dart';
 import 'package:grocery_app/ui/dimen_resource.dart';
 import 'package:grocery_app/ui/image_resource.dart';
+import 'package:grocery_app/utils/common_widgets.dart';
 import 'package:grocery_app/utils/rounded_progress_bar.dart';
 import 'package:grocery_app/utils/general_utils.dart';
 import 'package:grocery_app/utils/shared_pref_helper.dart';
@@ -17,22 +25,26 @@ import 'package:location/location.dart';
 import 'package:geolocator/geolocator.dart' as geolocator; // or whatever name you want
 
 
-class RegistrationScreen extends StatefulWidget {
+class RegistrationScreen extends BaseStatefulWidget {
   static const routeName = '/RegistrationScreen';
 
-  const RegistrationScreen({Key key}) : super(key: key);
 
   @override
   _RegistrationScreenState createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+class _RegistrationScreenState extends  BaseState<RegistrationScreen>
+         with BasicScreen, WidgetsBindingObserver {
+
+  FToast fToast;
+
   double DEFAULT_SCREEN_LEFT_RIGHT_MARGIN = 30.0;
 
   TextEditingController _userEmailController = TextEditingController();
   TextEditingController _userNameController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
   TextEditingController _fetchaddresswithlocation = TextEditingController();
+  TextEditingController _userContactController = TextEditingController();
 
   String InvalidUserMessage = "";
   bool _isObscure = true;
@@ -49,11 +61,77 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final Geolocator geolocator123 = Geolocator()..forceAndroidLocationManager;
   bool isLoading = false;
   ProgressBarHandler _handler;
+  FirstScreenBloc _categoryScreenBloc;
 
+  LoginResponse _offlineLogindetails;
+  CompanyDetailsResponse _offlineCompanydetails;
+  String CustomerID = "";
+  String LoginUserID = "";
+  String CompanyID = "";
 
+@override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _offlineLogindetails = SharedPrefHelper.instance.getLoginUserData();
+    _offlineCompanydetails= SharedPrefHelper.instance.getCompanyData();
+    CustomerID = _offlineLogindetails.details[0].customerID.toString();
+    LoginUserID = _offlineLogindetails.details[0].customerName.trim().toString();
+    CompanyID = _offlineCompanydetails.details[0].pkId.toString();
+    fToast = FToast();
+    fToast.init(context);
+    _categoryScreenBloc = FirstScreenBloc(baseBloc);
+}
 
   @override
   Widget build(BuildContext context) {
+    return BlocProvider(
+
+      create: (BuildContext context) => _categoryScreenBloc,
+      child: BlocConsumer<FirstScreenBloc, FirstScreenStates>(
+        builder: (BuildContext context, FirstScreenStates state) {
+
+          /*if(state is ProductCartResponseState)
+            {
+
+
+              _onCartListResponse(state,context);
+            }*/
+          return super.build(context);
+        },
+        buildWhen: (oldState, currentState) {
+       /*   if(currentState is InquiryProductSaveResponseState ||
+              currentState is CartDeleteResponseState
+
+          )
+          {
+            return true;
+
+          }*/
+          return false;
+        },
+        listener: (BuildContext context, FirstScreenStates state) {
+          if(state is CustomerRegistrationResponseState)
+          {
+            _onRegistrationSucess(state,context);
+          }
+          return super.build(context);
+        },
+        listenWhen: (oldState, currentState) {
+
+          if(currentState is CustomerRegistrationResponseState)
+            {
+              return true;
+            }
+          return false;
+        },
+      ),
+    );
+  }
+
+
+  @override
+  Widget buildBody(BuildContext context) {
     //var theme =ThemeData(colorScheme: ColorScheme(secondary:Colors.green ),);
 
     baseTheme = /*Theme.of(context).copyWith(
@@ -72,7 +150,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       handleCallback: (handler) { _handler = handler;},
     );
 
-    var scaffold =  Scaffold(
+    var scaffold = Scaffold(
 
       body: SingleChildScrollView(
         child: Container(
@@ -93,14 +171,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
 
 
-    return Stack(
-      children: <Widget>[
-        scaffold,
-        progressBar,
-      ],
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Stack(
+        children: <Widget>[
+          scaffold,
+          progressBar,
+        ],
+      ),
     );
 
 
+  }
+
+  Future<bool> _onBackPressed() {
+    navigateTo(context, LoginScreen.routeName, clearAllStack: true);
   }
 
   Widget _buildTopView() {
@@ -151,6 +236,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           height: 25,
         ),
         getCommonTextFormField(context, baseTheme,
+            title: "Username",
+            hint: "enter username",
+            keyboardType: TextInputType.emailAddress,
+            suffixIcon: Icon(Icons.person),
+            controller: _userNameController),
+        SizedBox(
+          height: 25,
+        ),
+        getCommonTextFormField(context, baseTheme,
             title: "Email",
             hint: "enter email address",
             keyboardType: TextInputType.emailAddress,
@@ -160,11 +254,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           height: 25,
         ),
         getCommonTextFormField(context, baseTheme,
-            title: "Username",
-            hint: "enter username",
-            keyboardType: TextInputType.emailAddress,
-            suffixIcon: Icon(Icons.person),
-            controller: _userNameController),
+            title: "Contact No.",
+            hint: "enter contact number",
+            keyboardType: TextInputType.phone,
+            suffixIcon: Icon(Icons.phone_android),
+            controller: _userContactController),
+
         SizedBox(
           height: 25,
         ),
@@ -298,28 +393,68 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             {
               if(_passwordController.text!="")
               {
-                if(_fetchaddresswithlocation.text!="")
-                {
+                if(_userContactController.text!="")
+                  {
+                    if(_fetchaddresswithlocation.text!="")
+                    {
 
-                  SignUpDetails signupDetails = new SignUpDetails();
+
+                      /* SignUpDetails signupDetails = new SignUpDetails();
                   signupDetails.Email = _userEmailController.text;
                   signupDetails.UserName = _userNameController.text;
 
                   signupDetails.Password = _passwordController.text;
                   signupDetails.Address = _fetchaddresswithlocation.text;
-                  SharedPrefHelper.instance.setSignUpData(signupDetails);
-                  SharedPrefHelper.instance.putString(SharedPrefHelper.IS_REGISTERED,"is_registered");
-                  navigateTo(context, LoginScreen.routeName,clearAllStack: true);
+                 // SharedPrefHelper.instance.setSignUpData(signupDetails);
+                  SharedPrefHelper.instance.putString(SharedPrefHelper.IS_REGISTERED,"is_registered");*/
 
-                }
-                else
+
+
+
+                      String CustomerName = _userNameController.text.toString();
+                      String Address = _fetchaddresswithlocation.text.toString();
+                      String EmailAddress = _userEmailController.text.toString();
+                      String ContactNo = _userContactController.text.toString();
+                      String LoginUserID = _userNameController.text.toString().trim();
+                      String BlockCustomer = "0";
+                      String ProfileImage = "";
+                      String Password = _passwordController.text.toString();
+                      String CompanyId = CompanyID;
+
+
+                      _categoryScreenBloc.add(CustomerRegistrationRequestCallEvent(0,CustomerRegistrationRequest(
+                        CustomerName: CustomerName,
+                          Address:Address,
+                        EmailAddress: EmailAddress,
+                          ContactNo:ContactNo,
+                          LoginUserID:LoginUserID,
+                          BlockCustomer: BlockCustomer,
+                          ProfileImage: ProfileImage,
+                          Password:Password,
+                          CompanyId: CompanyId,
+                          CustomerType:"customer"
+                      )));
+
+
+
+                    }
+                    else
+                    {
+                      showCommonDialogWithSingleOption(
+                          context, "Address is required!",
+                          positiveButtonTitle: "OK",onTapOfPositiveButton: (){
+                        Navigator.of(context).pop();
+                      });
+                    }
+                  }else
                 {
                   showCommonDialogWithSingleOption(
-                      context, "Address is required!",
+                      context, "Contact No. is required!",
                       positiveButtonTitle: "OK",onTapOfPositiveButton: (){
                     Navigator.of(context).pop();
                   });
                 }
+
               }
               else
               {
@@ -494,6 +629,36 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         return _formattedAddress;
       } else return null;
     } else return null;
+  }
+
+  void _onRegistrationSucess(CustomerRegistrationResponseState state, BuildContext context) {
+
+     print("Response Customer" + " Response : " + state.customerRegistrationResponse.details[0].column2.toString());
+
+     if(state.customerRegistrationResponse.details[0].column2=="Customer Information Added Successfully")
+       {
+
+         showCommonDialogWithSingleOption(context, state.customerRegistrationResponse.details[0].column2 ,
+             positiveButtonTitle: "OK",onTapOfPositiveButton: (){
+           navigateTo(context, LoginScreen.routeName,clearAllStack: true);
+         });
+
+
+
+       }
+     else
+       {
+
+
+         showCommonDialogWithSingleOption(context, state.customerRegistrationResponse.details[0].column2 ,
+             positiveButtonTitle: "OK");
+       }
+    /* fToast.showToast(
+       child: showCustomToast(Title: "registered successful"),
+       gravity: ToastGravity.BOTTOM,
+       toastDuration: Duration(seconds: 2),
+     );*/
+
   }
 
 }

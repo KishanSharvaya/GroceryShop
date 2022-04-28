@@ -1,3 +1,4 @@
+import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:grocery_app/styles/colors.dart';
@@ -64,12 +65,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       {String label, String iconPath, int index}) {
     Color iconColor =
         index == currentIndex ? AppColors.primaryColor : Colors.black;
-    return BottomNavigationBarItem(
-      label: label,
-      icon: SvgPicture.asset(
-        iconPath,
-        color: iconColor,
-      ),
-    );
+
+
+        return BottomNavigationBarItem(
+          label: label,
+          icon: SvgPicture.asset(
+            iconPath,
+            color: iconColor,
+          ),
+         // activeIcon: badge
+        );
+
+
+
+
   }
 }

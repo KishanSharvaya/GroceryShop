@@ -42,13 +42,14 @@ class GroceryItemCardWidget extends StatelessWidget {
               height: 20,
             ),
             AppText(
-              text: item.name,
-              fontSize: 16,
+              text: item.ProductName,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
             AppText(
-              text: item.description,
-              fontSize: 14,
+
+              text: item.ProductSpecification,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: Color(0xFF7C7C7C),
             ),
@@ -58,8 +59,8 @@ class GroceryItemCardWidget extends StatelessWidget {
             Row(
               children: [
                 AppText(
-                  text: "\$${item.price.toStringAsFixed(2)}",
-                  fontSize: 18,
+                  text: "\$${item.UnitPrice.toStringAsFixed(2)}",
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
                 Spacer(),
@@ -74,7 +75,9 @@ class GroceryItemCardWidget extends StatelessWidget {
 
   Widget imageWidget() {
     return Container(
-      child: Image.asset(item.imagePath),
+      child: //Image.asset(item.imagePath),
+      //Image.network("http://122.169.111.101:206/productimages/beverages.png")
+      Image.network(item.ProductImage)
     );
   }
 

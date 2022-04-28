@@ -55,6 +55,7 @@ class CartScreen extends StatelessWidget {
               Divider(
                 thickness: 1,
               ),
+
               getCheckoutButton(context)
             ],
           ),
@@ -70,7 +71,7 @@ class CartScreen extends StatelessWidget {
         label: "Go To Check Out",
         fontWeight: FontWeight.w600,
         padding: EdgeInsets.symmetric(vertical: 30),
-        trailingWidget: getButtonPriceWidget(),
+        /*trailingWidget: getButtonPriceWidget(),*/
         onPressed: () {
           showBottomSheet(context);
         },

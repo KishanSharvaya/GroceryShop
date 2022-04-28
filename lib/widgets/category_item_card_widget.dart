@@ -53,10 +53,11 @@ class CategoryItemCardWidget extends StatelessWidget {
 
   Widget imageWidget() {
     return Container(
-      child: Image.asset(
+      child: /*Image.asset(
         item.imagePath,
         fit: BoxFit.contain,
-      ),
+      ),*/
+      Image.network(item.imagePath,fit: BoxFit.contain)
     );
   }
 }

@@ -24,3 +24,4 @@ const HISTORY_ICON = "assets/images/history.png";
 const ADD_ICON ="assets/images/add.png";
 const COMPLAINT ="assets/images/complaint.jpg";
 const VISIT ="assets/images/visit.png";
+const EMPTYCART = "assets/images/empty_cart.png";

@@ -42,7 +42,7 @@ class GroceryFeaturedCard extends StatelessWidget {
           ),
           AppText(
             text: groceryFeaturedItem.name,
-            fontSize: 20,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
           )
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:grocery_app/common_widgets/app_button.dart';
 import 'package:grocery_app/common_widgets/app_text.dart';
 import 'package:grocery_app/screens/dashboard/dashboard_screen.dart';
@@ -12,6 +13,7 @@ class WelcomeScreen extends StatelessWidget {
   static const routeName = '/WelcomeScreen';
 
   final String imagePath = "assets/images/welcome_image.png";
+
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +116,9 @@ class WelcomeScreen extends StatelessWidget {
     final isGpsOn = serviceStatus == ServiceStatus.enabled;
     if (!isGpsOn) {
       print('Turn on location services before requesting permission.');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Turn on location services before requesting permission."),
+      ));
       return;
     }
 

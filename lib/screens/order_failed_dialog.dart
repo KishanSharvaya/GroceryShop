@@ -4,6 +4,8 @@ import 'package:grocery_app/common_widgets/app_text.dart';
 import 'package:grocery_app/screens/order_accepted_screen.dart';
 
 class OrderFailedDialogue extends StatelessWidget {
+  static const routeName = '/OrderFailedDialogue';
+
   @override
   Widget build(BuildContext context) {
     return Dialog(

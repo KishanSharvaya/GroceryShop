@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:grocery_app/bloc/others/firstscreen/first_screen_bloc.dart';
+import 'package:grocery_app/models/api_response/Customer/customer_login_response.dart';
+import 'package:grocery_app/models/api_response/company_details_response.dart';
+import 'package:grocery_app/models/api_response/login_user_details_api_response.dart';
 import 'package:grocery_app/models/signup_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,8 +36,6 @@ class SharedPrefHelper {
   static const String IS_LOGGED_IN_USER_DATA = "logged_User_in_data";
   static const String GEN_LATITUDE = "Latitude";
   static const String GEN_LONGITUDE = "Longitude";
-
-
 
   SharedPrefHelper(this.prefs);
 
@@ -100,6 +102,25 @@ class SharedPrefHelper {
     return getString(GEN_LONGITUDE);
   }
 
+  setCompanyData(CompanyDetailsResponse data) async {
+    await putString(IS_COMPANY_LOGGED_IN_DATA, json.encode(data));
+  }
+
+
+  setLoginUserData(LoginResponse data) async {
+    await putString(IS_LOGGED_IN_USER_DATA, json.encode(data));
+  }
+
+
+  CompanyDetailsResponse getCompanyData()  {
+    return CompanyDetailsResponse.fromJson(json.decode(getString(IS_COMPANY_LOGGED_IN_DATA)));
+  }
+  LoginResponse getLoginUserData()  {
+    return LoginResponse.fromJson(json.decode(getString(IS_LOGGED_IN_USER_DATA)));
+  }
+
+
+
 
 
   Future<bool> clear() async {
@@ -113,21 +134,6 @@ class SharedPrefHelper {
     return getBool(IS_LOGGED_IN_DATA) ?? false;
   }
 
-  setSignUpData(SignUpDetails data) async {
-    await putString(IS_COMPANY_LOGGED_IN_DATA, json.encode(data));
-  }
-  SignUpDetails getSignUpData()  {
-    return SignUpDetails.fromJson(json.decode(getString(IS_COMPANY_LOGGED_IN_DATA)));
-  }
 
-/* setSalesListData(String key, List<ALL_Name_ID> value) async {
-    SharedPreferences myPrefs = await SharedPreferences.getInstance();
-    myPrefs.setStringList(key, json.encode(value));
-  }
-
-  Future<List<String>> getSalesListData(String key) async {
-    SharedPreferences myPrefs = await SharedPreferences.getInstance();
-    return myPrefs.getStringList(key);
-  }*/
 
 }

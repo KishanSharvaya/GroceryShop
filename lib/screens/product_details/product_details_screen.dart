@@ -1,10 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:grocery_app/common_widgets/app_button.dart';
 import 'package:grocery_app/common_widgets/app_text.dart';
 import 'package:grocery_app/models/database_models/db_product_cart_details.dart';
 import 'package:grocery_app/models/grocery_item.dart';
+import 'package:grocery_app/screens/cart/dynamic_cart_scree.dart';
+import 'package:grocery_app/screens/dashboard/dashboard_screen.dart';
+import 'package:grocery_app/utils/common_widgets.dart';
 import 'package:grocery_app/utils/general_utils.dart';
 import 'package:grocery_app/utils/offline_db_helper.dart';
 import 'package:grocery_app/widgets/item_counter_widget.dart';
@@ -12,6 +16,8 @@ import 'package:grocery_app/widgets/item_counter_widget.dart';
 import 'favourite_toggle_icon_widget.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
+  static const routeName = '/ProductDetailsScreen';
+
   final GroceryItem groceryItem;
 
   const ProductDetailsScreen(this.groceryItem);
@@ -22,6 +28,49 @@ class ProductDetailsScreen extends StatefulWidget {
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   int amount = 1;
+  FToast fToast;
+  bool isProductinCart=false;
+  bool favorite = false;
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    fToast = FToast();
+    fToast.init(context);
+    getproductlistfromdbMethod();
+    getproductFavoritelistfromdbMethod();
+
+
+  }
+
+  getproductlistfromdbMethod() async {
+    await getproductductdetails();
+
+  }
+  Future<void> getproductductdetails() async {
+
+  await OfflineDbHelper.getInstance().getProductCartList();
+  List<ProductCartModel> groceryItemdb= await OfflineDbHelper.getInstance().getProductCartList();
+  for(int i=0;i<groceryItemdb.length;i++)
+  {
+    if(groceryItemdb[i].ProductID==widget.groceryItem.ProductID)
+    {
+      isProductinCart = true;
+      break;
+    }
+    else
+    {
+      isProductinCart = false;
+    }
+
+    print("FlagDeBIUG"+isProductinCart.toString() + " DBPRID " + groceryItemdb[i].ProductID.toString() + widget.groceryItem.ProductID.toString());
+
+  }
+
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,17 +87,39 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        widget.groceryItem.name,
+                        widget.groceryItem.ProductName,
                         style: TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       subtitle: AppText(
-                        text: widget.groceryItem.description,
+                        text: widget.groceryItem.ProductSpecification,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Color(0xff7C7C7C),
                       ),
-                      trailing: FavoriteToggleIcon(),
+                      trailing: /*FavoriteToggleIcon()*/InkWell(
+                        onTap: () {
+                          setState(() {
+                            favorite = !favorite;
+                            if(favorite==true)
+                            {
+                              _OnTaptoAddProductinCartFavorit();
+                            }
+                            else
+                            {
+                              _onTapOfDeleteContact();
+                            }
+                          });
+
+
+
+                        },
+                        child: Icon(
+                          favorite ? Icons.favorite : Icons.favorite_border,
+                          color: favorite ? Colors.red : Colors.blueGrey,
+                          size: 30,
+                        ),
+                      ),
                     ),
                     Spacer(),
                     Row(
@@ -83,12 +154,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ),
                     Spacer(),
                     AppButton(
-                      label: "Add To Basket",
+                      label: isProductinCart==true?"View On Cart":"Add To Basket",
                       onPressed: (){
 
-                          _OnTaptoAddProductinCart();
+                        isProductinCart==true?navigateTo(context,DynamicCartScreen.routeName,clearAllStack: true): _OnTaptoAddProductinCart();
 
-
+                                           /* Fluttertoast.showToast(
+                              msg: "Item Added To Cart",
+                              toastLength: Toast.LENGTH_SHORT,
+                              gravity: ToastGravity.CENTER,
+                              timeInSecForIosWeb: 1,
+                              backgroundColor: Colors.red,
+                              textColor: Colors.white,
+                              fontSize: 16.0
+                          );*/
+                      //
                       },
                     ),
                     Spacer(),
@@ -123,9 +203,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             stops: [0.0, 1.0],
             tileMode: TileMode.clamp),
       ),
-      child: Image(
+      child: /*Image(
         image: AssetImage(widget.groceryItem.imagePath),
-      ),
+      ),*/
+      Image.network(widget.groceryItem.ProductImage)
     );
   }
 
@@ -133,7 +214,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return InkWell(
       onTap: (){
         showCommonDialogWithSingleOption(
-            context, "Product : "+ widget.groceryItem.name +"\n"+ "Price : "+widget.groceryItem.price.toString()  + " Nutritions : " + widget.groceryItem.Nutritions,
+            context, "Product : "+ widget.groceryItem.ProductName +"\n"+ "Price : "+widget.groceryItem.UnitPrice.toString()  + " Nutritions : " + widget.groceryItem.Unit,
             positiveButtonTitle: "OK",onTapOfPositiveButton: (){
           Navigator.of(context).pop();
         });
@@ -171,7 +252,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         borderRadius: BorderRadius.circular(5),
       ),
       child: AppText(
-        text: widget.groceryItem.Nutritions,
+        text: widget.groceryItem.Unit,
         fontWeight: FontWeight.w600,
         fontSize: 12,
         color: Color(0xff7C7C7C),
@@ -200,23 +281,120 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   double getTotalPrice() {
-    return amount * widget.groceryItem.price;
+    return amount * widget.groceryItem.UnitPrice;
   }
 
    _OnTaptoAddProductinCart() async {
 
-     String name = widget.groceryItem.name;
-     String Nutritions = widget.groceryItem.Nutritions;
-     String description = widget.groceryItem.description;
-     String ImagePath = widget.groceryItem.imagePath;
-     int Qty = amount;
-     double Amount = getTotalPrice();
+     String name = widget.groceryItem.ProductName;
+     String Alias = widget.groceryItem.ProductName;
+     int ProductID=widget.groceryItem.ProductID;
+     int CustomerID = widget.groceryItem.CustomerID;
 
-     ProductCartModel productCartModel = new ProductCartModel(name,description,Amount,Qty,Nutritions,ImagePath);
+     String Unit = widget.groceryItem.Unit;
+     String description = widget.groceryItem.ProductSpecification;
+     String ImagePath = widget.groceryItem.ProductImage;
+     int Qty = amount;
+     double Amount = widget.groceryItem.UnitPrice;//getTotalPrice();
+     double DiscountPer = widget.groceryItem.DiscountPer;
+     String LoginUserID =widget.groceryItem.LoginUserID;
+     String CompanyID = widget.groceryItem.ComapanyID;
+     String ProductSpecification = widget.groceryItem.ProductSpecification;
+     String ProductImage = widget.groceryItem.ProductImage;
+
+     ProductCartModel productCartModel = new ProductCartModel(name,Alias,ProductID,CustomerID,Unit,Amount,Qty,DiscountPer,LoginUserID,CompanyID,
+         ProductSpecification,ProductImage
+     );
 
 
       await OfflineDbHelper.getInstance().insertProductToCart(productCartModel);
 
+     fToast.showToast(
+       child: showCustomToast(Title: "Item Added To Cart"),
+       gravity: ToastGravity.BOTTOM,
+       toastDuration: Duration(seconds: 2),
+     );
+     navigateTo(context, DashboardScreen.routeName,clearAllStack: true);
 
+   }
+
+
+  _OnTaptoAddProductinCartFavorit() async {
+
+    String name = widget.groceryItem.ProductName;
+    String Alias = widget.groceryItem.ProductName;
+    int ProductID=widget.groceryItem.ProductID;
+    int CustomerID = widget.groceryItem.CustomerID;
+
+    String Unit = widget.groceryItem.Unit;
+    String description = widget.groceryItem.ProductSpecification;
+    String ImagePath = widget.groceryItem.ProductImage;
+    int Qty = amount;
+    double Amount = widget.groceryItem.UnitPrice;//getTotalPrice();
+    double DiscountPer = widget.groceryItem.DiscountPer;
+    String LoginUserID =widget.groceryItem.LoginUserID;
+    String CompanyID = widget.groceryItem.ComapanyID;
+    String ProductSpecification = widget.groceryItem.ProductSpecification;
+    String ProductImage = widget.groceryItem.ProductImage;
+
+    ProductCartModel productCartModel = new ProductCartModel(name,Alias,ProductID,CustomerID,Unit,Amount,Qty,DiscountPer,LoginUserID,CompanyID,
+        ProductSpecification,ProductImage
+    );
+
+
+    await OfflineDbHelper.getInstance().insertProductToCartFavorit(productCartModel);
+
+    fToast.showToast(
+      child: showCustomToast(Title: "Item Added To Favorite"),
+      gravity: ToastGravity.BOTTOM,
+      toastDuration: Duration(seconds: 2),
+    );
+    //navigateTo(context, DashboardScreen.routeName,clearAllStack: true);
+
+  }
+
+  Future<void> _onTapOfDeleteContact() async {
+    await OfflineDbHelper.getInstance().deleteContactFavorit(widget.groceryItem.ProductID);
+    fToast.showToast(
+      child: showCustomToast(Title: "Item Remove To Favorite"),
+      gravity: ToastGravity.BOTTOM,
+      toastDuration: Duration(seconds: 2),
+    );
+  }
+
+
+  void chekforProductExist() {
+
+
+
+
+  }
+
+  void getproductFavoritelistfromdbMethod() async {
+    await getproductductfavoritedetails();
+
+  }
+
+  getproductductfavoritedetails() async {
+
+    await OfflineDbHelper.getInstance().getProductCartFavoritList();
+    List<ProductCartModel> groceryItemdb= await OfflineDbHelper.getInstance().getProductCartFavoritList();
+    for(int i=0;i<groceryItemdb.length;i++)
+    {
+      if(groceryItemdb[i].ProductID==widget.groceryItem.ProductID)
+      {
+        favorite = true;
+        break;
+      }
+      else
+      {
+        favorite = false;
+      }
+
+      //print("FlagDeBIUG"+isProductinCart.toString() + " DBPRID " + groceryItemdb[i].ProductID.toString() + widget.groceryItem.ProductID.toString());
+
+    }
+
+    setState(() {});
   }
 }

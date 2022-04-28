@@ -22,6 +22,7 @@ class AppText extends StatelessWidget {
       text,
       textAlign: textAlign == null ? null : TextAlign.center,
       style: TextStyle(
+
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,

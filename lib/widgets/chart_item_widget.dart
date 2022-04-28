@@ -46,7 +46,7 @@ class _ChartItemWidgetState extends State<ChartItemWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText(
-                  text: widget.item.name,
+                  text: widget.item.ProductName,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -54,7 +54,7 @@ class _ChartItemWidgetState extends State<ChartItemWidget> {
                   height: 5,
                 ),
                 AppText(
-                    text: widget.item.description,
+                    text: widget.item.ProductSpecification,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.darkGrey),
@@ -104,11 +104,11 @@ class _ChartItemWidgetState extends State<ChartItemWidget> {
   Widget imageWidget() {
     return Container(
       width: 100,
-      child: Image.asset(widget.item.imagePath),
+      child: Image.asset(widget.item.ProductImage),
     );
   }
 
   double getPrice() {
-    return widget.item.price * amount;
+    return widget.item.UnitPrice * amount;
   }
 }

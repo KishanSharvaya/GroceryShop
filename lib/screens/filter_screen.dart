@@ -4,7 +4,15 @@ import 'package:grocery_app/common_widgets/app_button.dart';
 import 'package:grocery_app/common_widgets/app_text.dart';
 import 'package:grocery_app/styles/colors.dart';
 
-class FilterScreen extends StatelessWidget {
+class FilterScreen extends StatefulWidget {
+  static const routeName = '/FilterScreen';
+
+
+  @override
+  _FilterScreenState createState() => _FilterScreenState();
+}
+
+class _FilterScreenState extends State<FilterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +80,10 @@ class FilterScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+
+
 
   Widget getLabel(String text) {
     return Text(
@@ -80,7 +92,7 @@ class FilterScreen extends StatelessWidget {
           color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
     );
   }
-}
+
 
 class OptionItem extends StatefulWidget {
   final String text;

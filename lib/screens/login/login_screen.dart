@@ -1,24 +1,39 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:grocery_app/bloc/base/base_bloc.dart';
+import 'package:grocery_app/bloc/others/firstscreen/first_screen_bloc.dart';
 import 'package:grocery_app/common_widgets/app_button.dart';
+import 'package:grocery_app/models/api_request/CartList/product_cart_list_request.dart';
+import 'package:grocery_app/models/api_request/Customer/customer_login_request.dart';
+import 'package:grocery_app/models/api_request/company_details_request.dart';
+import 'package:grocery_app/models/api_request/login_user_details_api_request.dart';
+import 'package:grocery_app/models/api_response/Customer/customer_login_response.dart';
+import 'package:grocery_app/models/api_response/company_details_response.dart';
+import 'package:grocery_app/models/api_response/login_user_details_api_response.dart';
+import 'package:grocery_app/models/database_models/db_product_cart_details.dart';
+import 'package:grocery_app/screens/base/base_screen.dart';
 import 'package:grocery_app/screens/dashboard/dashboard_screen.dart';
+import 'package:grocery_app/screens/forgot_password/forgot_password_screen.dart';
 import 'package:grocery_app/screens/registration/registration_screen.dart';
 import 'package:grocery_app/ui/color_resource.dart';
 import 'package:grocery_app/ui/dimen_resource.dart';
 import 'package:grocery_app/ui/image_resource.dart';
 import 'package:grocery_app/utils/general_utils.dart';
+import 'package:grocery_app/utils/offline_db_helper.dart';
 import 'package:grocery_app/utils/shared_pref_helper.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends BaseStatefulWidget {
   static const routeName = '/LoginScreen';
 
-  const LoginScreen({Key key}) : super(key: key);
+ // const LoginScreen({Key key}) : super(key: key);
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState  extends BaseState<LoginScreen>
+with BasicScreen, WidgetsBindingObserver {
   double DEFAULT_SCREEN_LEFT_RIGHT_MARGIN = 30.0;
 
   TextEditingController _userNameController = TextEditingController();
@@ -28,9 +43,26 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isObscure = true;
   String SiteUrl="";
   ThemeData baseTheme;
+  FirstScreenBloc _firstScreenBloc;
+  CompanyDetailsResponse _offlineCompanyData;
+  LoginResponse _offlineLoggedInDetailsData;
+
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    _firstScreenBloc = FirstScreenBloc(baseBloc);
+
+    _firstScreenBloc
+      ..add(CompanyDetailsCallEvent(
+          CompanyDetailsApiRequest(serialKey: "BBBB-BBBB-BBBB-BBBB")));
+
+  }
+
+  @override
+  Widget buildBody(BuildContext context) {
    //var theme =ThemeData(colorScheme: ColorScheme(secondary:Colors.green ),);
 
     baseTheme = /*Theme.of(context).copyWith(
@@ -61,6 +93,52 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (BuildContext context) => _firstScreenBloc,
+      child: BlocConsumer<FirstScreenBloc, FirstScreenStates>(
+        builder: (BuildContext context, FirstScreenStates state) {
+
+          if (state is ComapnyDetailsEventResponseState) {
+            _onCompanyDetailsCallSucess(state.companyDetailsResponse);
+          }
+
+
+          return super.build(context);
+        },
+        buildWhen: (oldState, currentState) {
+          if(currentState is ComapnyDetailsEventResponseState)
+            {
+              return true;
+            }
+          return false;
+        },
+        listener: (BuildContext context, FirstScreenStates state) {
+          if (state is LoginResponseState) {
+            _onLoginSucessResponse(state, context);
+          }
+          if (state is ProductFavoriteResponseState) {
+            _onFavoriteProductList(state, context);
+          }
+          if (state is ProductCartResponseState) {
+            _onCartProductList(state, context);
+          }
+
+          return super.build(context);
+        },
+        listenWhen: (oldState, currentState) {
+          if (currentState is LoginResponseState ||
+              currentState is ProductFavoriteResponseState ||
+              currentState is ProductCartResponseState) {
+            return true;
+          }
+          return false;
+        },
+      ),
+    );
   }
 
   Widget _buildTopView() {
@@ -114,8 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
      crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           getCommonTextFormField(context, baseTheme,
-              title: "Username",
-              hint: "enter username",
+              title: "Email",
+              hint: "enter email address",
               keyboardType: TextInputType.emailAddress,
               suffixIcon: Icon(Icons.person),
               controller: _userNameController),
@@ -147,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
             alignment: Alignment.centerRight,
             child: InkWell(
               onTap: () {
-                //_onTapOfForgetPassword();
+                _onTapOfForgetPassword();
               },
               child: Text(
                 "Forget Password?",
@@ -203,7 +281,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           )
-
         ],
       );
 
@@ -217,7 +294,18 @@ class _LoginScreenState extends State<LoginScreen> {
       onPressed: () {
         //onGetStartedClicked(context);
 
-        if(_userNameController.text!="") {
+
+
+
+
+        _firstScreenBloc.add(LoginRequestCallEvent(LoginRequest(
+            EmailAddress: _userNameController.text.toString(),
+            Password: _passwordController.text.toString(),
+            CompanyId: _offlineCompanyData.details[0].pkId.toString())));
+
+
+
+       /* if(_userNameController.text!="") {
           if(_passwordController.text!="") {
             if (SharedPrefHelper.IS_REGISTERED == "is_registered") {
               // addError(error: "Success");
@@ -232,7 +320,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         .Password == _passwordController.text) {
                   SharedPrefHelper.instance.putBool(
                       SharedPrefHelper.IS_LOGGED_IN_DATA, true);
-                  //Navigator.pushNamed(context, LoginSuccessScreen.routeName);
                   navigateTo(
                       context, DashboardScreen.routeName, clearAllStack: true);
                 }
@@ -281,7 +368,7 @@ class _LoginScreenState extends State<LoginScreen> {
               positiveButtonTitle: "OK", onTapOfPositiveButton: () {
             Navigator.of(context).pop();
           });
-        }
+        }*/
 
       },
     );
@@ -327,6 +414,124 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  void _onLoginSucessResponse(LoginResponseState state, BuildContext context) {
+
+    print("LoginSucess" + state.loginResponse.details[0].emailAddress);
+    String EmpName = state.loginResponse.details[0].customerName;
+    if(EmpName!="")
+      {
+        SharedPrefHelper.instance.putBool(SharedPrefHelper.IS_LOGGED_IN_DATA, true);
+        SharedPrefHelper.instance.setLoginUserData(state.loginResponse);
+        _offlineCompanyData = SharedPrefHelper.instance.getCompanyData();
+        _offlineLoggedInDetailsData = SharedPrefHelper.instance.getLoginUserData();
+       // print("LoginAuthenticateSucess123" + "CompanyID : " + _offlineCompanyData.details[0].pkId.toString() +"LoginUserID : "+_offlineLoggedInDetailsData.details[0].userID);
+
+        _firstScreenBloc.add(ProductFavoriteDetailsRequestCallEvent(ProductCartDetailsRequest(CompanyId: _offlineCompanyData.details[0].pkId.toString(),CustomerID: state.loginResponse.details[0].customerID.toString())));
+
+
+        // navigateTo(context, DashboardScreen.routeName, clearAllStack: true);
+
+      }
+
+  }
+
+  void _onCompanyDetailsCallSucess(CompanyDetailsResponse companyDetailsResponse) {
+
+    if(companyDetailsResponse.details.length!=0)
+    {
+      SharedPrefHelper.instance.setCompanyData(companyDetailsResponse);
+      _offlineCompanyData = SharedPrefHelper.instance.getCompanyData();
+      SharedPrefHelper.instance.putBool(SharedPrefHelper.IS_REGISTERED, true);
+
+      //navigateTo(context, FirstScreen.routeName, clearAllStack: true);
+
+      print(
+          "Company Details : " + companyDetailsResponse.details[0].companyName.toString() + "");
+    }
+  }
+
+  void _onTapOfForgetPassword() {
+    navigateTo(context, ForgotPasswordScreen.routeName,clearAllStack: true);
+
+  }
+
+  void _onFavoriteProductList(ProductFavoriteResponseState state, BuildContext context) async {
+    await OfflineDbHelper.getInstance().deleteContactTableFavorit();
+
+    for (int i = 0; i < state.cartDeleteResponse.details.length; i++)
+    {
+      String name = state.cartDeleteResponse.details[i].productName;
+      String Alias = state.cartDeleteResponse.details[i].productName;
+      int ProductID = state.cartDeleteResponse.details[i].productID;
+      int CustomerID = state.cartDeleteResponse.details[i].customerID;
+
+      String Unit = state.cartDeleteResponse.details[i].unit;
+      int Qty = state.cartDeleteResponse.details[i].quantity.toInt();
+      double Amount = state.cartDeleteResponse.details[i]
+          .unitPrice; //getTotalPrice();
+      double DiscountPer = state.cartDeleteResponse.details[i]
+          .discountPercent;
+
+      String ProductSpecification = "";
+      String ProductImage = "http://122.169.111.101:206/productimages/no-figure.png";
+
+      ProductCartModel productCartModel = new ProductCartModel(
+          name,
+          Alias,
+          ProductID,
+          CustomerID,
+          Unit,
+          Amount,
+          Qty,
+          DiscountPer,
+          _offlineLoggedInDetailsData.details[0].customerName.replaceAll(' ', ""),
+          _offlineCompanyData.details[0].pkId.toString(),
+          ProductSpecification,
+          ProductImage
+      );
+
+
+      await OfflineDbHelper.getInstance().insertProductToCartFavorit(
+          productCartModel);
+    }
+
+
+    _firstScreenBloc.add(ProductCartDetailsRequestCallEvent(ProductCartDetailsRequest(CompanyId: _offlineCompanyData.details[0].pkId.toString(),CustomerID: _offlineLoggedInDetailsData.details[0].customerID.toString())));
+
+
+  }
+
+  void _onCartProductList(ProductCartResponseState state, BuildContext context) async {
+
+    await OfflineDbHelper.getInstance().deleteContactTable();
+    for(int i=0;i<state.cartDeleteResponse.details.length;i++)
+    {
+      String name = state.cartDeleteResponse.details[i].productName;
+      String Alias =state.cartDeleteResponse.details[i].productName;
+      int ProductID=state.cartDeleteResponse.details[i].productID;
+      int CustomerID = state.cartDeleteResponse.details[i].customerID;
+
+      String Unit = state.cartDeleteResponse.details[i].unit;
+      int Qty = state.cartDeleteResponse.details[i].quantity.toInt();
+      double Amount =state.cartDeleteResponse.details[i].unitPrice;//getTotalPrice();
+      double DiscountPer = state.cartDeleteResponse.details[i].discountPercent;
+
+      String ProductSpecification = "";
+      String ProductImage = "http://122.169.111.101:206/productimages/no-figure.png";
+
+      ProductCartModel productCartModel = new ProductCartModel(name,Alias,ProductID,CustomerID,Unit,Amount,Qty,DiscountPer,_offlineLoggedInDetailsData.details[0].customerName.replaceAll(' ', ""),_offlineCompanyData.details[0].pkId.toString(),
+          ProductSpecification,ProductImage
+      );
+
+
+      await OfflineDbHelper.getInstance().insertProductToCart(productCartModel);
+
+    }
+
+    navigateTo(context, DashboardScreen.routeName, clearAllStack: true);
+
   }
 
 
